@@ -1,11 +1,18 @@
 import re
 
 from pypdf import PdfReader
+from sentence_transformers import SentenceTransformer
 
+model = SentenceTransformer("all-MiniLM-L6-v2")
 PDF_PATH = "ai_document_intelligence_poc_sample.pdf"
 HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)*\.?)\s+(.+)$")
 PAGE_NUMBER_PATTERN = re.compile(r"\bPage\s+\d+\s+of\s+\d+\b")
 
+
+def embed_chunk(chunks: list[dict]) -> list[dict]:
+    for chunk in chunks:
+        chunk["embedding"] = model.encode(chunk["text"]).tolist()
+    return chunks
 
 def extract_paragraph_chunks(pdf_path: str) -> list[dict[str, str | int | None]]:
     reader = PdfReader(pdf_path)
@@ -68,10 +75,10 @@ def extract_paragraph_chunks(pdf_path: str) -> list[dict[str, str | int | None]]
 if __name__ == "__main__":
     chunks = extract_paragraph_chunks(PDF_PATH)
     print(f"Created {len(chunks)} paragraph chunks.")
-
+    chunks = embed_chunk(chunks)
     for chunk in chunks[:4]:
         print(
             f"\n{chunk['chunk_id']} | page {chunk['page_number']} "
             f"| heading: {chunk['heading'] or 'none'}"
         )
-        print(chunk["text"])
+        
