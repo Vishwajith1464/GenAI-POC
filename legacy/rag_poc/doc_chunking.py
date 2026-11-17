@@ -1,15 +1,15 @@
 import re
-
+from legacy.rag_poc.embedding_model import model as embedding_model
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
 PDF_PATH = "ai_document_intelligence_poc_sample.pdf"
 HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)*\.?)\s+(.+)$")
 PAGE_NUMBER_PATTERN = re.compile(r"\bPage\s+\d+\s+of\s+\d+\b")
+min_chunk_length = 50  # Minimum number of characters for a chunk
 
 
 def embed_chunk(chunks: list[dict]) -> list[dict]:
+    model = embedding_model
     for chunk in chunks:
         chunk["embedding"] = model.encode(chunk["text"]).tolist()
     return chunks
@@ -76,9 +76,11 @@ if __name__ == "__main__":
     chunks = extract_paragraph_chunks(PDF_PATH)
     print(f"Created {len(chunks)} paragraph chunks.")
     chunks = embed_chunk(chunks)
-    for chunk in chunks[:4]:
+    for chunk in chunks[:10]:
         print(
             f"\n{chunk['chunk_id']} | page {chunk['page_number']} "
             f"| heading: {chunk['heading'] or 'none'}"
+            f"|text: {chunk['text'][:100]}..."
+            f"|heading_id: {chunk['heading_id']}"
+            f"|title_id: {chunk['title_id']}"
         )
-        
